@@ -74,9 +74,9 @@ $folder.RegisterTaskDefinition($task_name, $task, 6, $username, $pass_to_use, $l
 $registered_task = $folder.GetTask("\$task_name")
 $registered_task.Run($null) | Out-Null
 
-$timeout = 10
+$registered_timeout = <%= registered_timeout %>
 $sec = 0
-while ( (!($registered_task.state -eq 4)) -and ($sec -lt $timeout) ) {
+while ( (!($registered_task.state -eq 4)) -and ($sec -lt $registered_timeout) ) {
   Start-Sleep -s 1
   $sec++
 }
@@ -97,11 +97,14 @@ function SlurpOutput($file, $cur_line, $out_type) {
 
 $err_cur_line = 0
 $out_cur_line = 0
+$timeout = <%= execution_timeout * 10 %>
+$sec = 0
 do {
   Start-Sleep -m 100
   $out_cur_line = SlurpOutput $out_file $out_cur_line 'out'
   $err_cur_line = SlurpOutput $err_file $err_cur_line 'err'
-} while (!($registered_task.state -eq 3))
+  $sec++
+} while( (!($registered_task.state -eq 3)) -and ($sec -lt $timeout) )
 
 # We'll make a best effort to clean these files
 # But a reboot could possibly end the task while the process
