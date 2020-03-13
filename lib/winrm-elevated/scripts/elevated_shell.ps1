@@ -20,6 +20,12 @@ $task_name = "WinRM_Elevated_Shell_" + [guid]::NewGuid()
 $out_file = [System.IO.Path]::GetTempFileName()
 $err_file = [System.IO.Path]::GetTempFileName()
 
+$old_tasks_filter_date = [datetime]::Now.AddSeconds(<%= -1 * execution_timeout %>)
+$old_tasks_to_kill = $(Get-ScheduledTask "WinRM_Elevated_Shell*" | Where-Object {
+    ((Get-ScheduledTaskInfo -TaskName ($_.TaskName)).LastRunTime -le $old_tasks_filter_date) -and ($_.TaskName -ne $task_name)
+    })
+$old_tasks_to_kill | ForEach-Object { try { Unregister-ScheduledTask -TaskName $_.TaskName -Confirm:$false } catch {} }
+
 $task_xml = @'
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
